@@ -50,10 +50,5 @@ public class Reader extends SwingWorker<Void, ImageContainer> {
             listModel.addElement(imageContainer);
         }
     }
-
-    @Override
-    protected void done() {
-        System.out.println("ok");
-    }
 }
 
