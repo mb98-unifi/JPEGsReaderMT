@@ -112,6 +112,7 @@ public class UserInterface extends JFrame {
 
         startButton.addActionListener(e -> {
             listModel.clear();
+            startButton.setEnabled(false);
 
             File folder = new File(textField.getText());
             File[] files = folder.listFiles();
@@ -121,8 +122,14 @@ public class UserInterface extends JFrame {
 
                 int elementsNumber = files.length / THREADS_NUM;
 
+                if (files.length < 20) {
+                    THREADS_NUM = 1;
+                    threadsComboBox.setSelectedIndex(0);
+                    elementsNumber = files.length;
+                }
+
                 Reader[] readers = new Reader[THREADS_NUM];
-                StateListener stateListener = new StateListener(THREADS_NUM, label5);
+                StateListener stateListener = new StateListener(THREADS_NUM, label5, startButton);
 
                 for (int i = 0; i < THREADS_NUM - 1; i++) {
                     readers[i] = new Reader(files, elementsNumber * i, elementsNumber * (i + 1), listModel);
