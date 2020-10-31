@@ -2,6 +2,7 @@ package it.unifi;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 public class UserInterface extends JFrame {
     private int THREADS_NUM = 4;
@@ -91,14 +92,49 @@ public class UserInterface extends JFrame {
 
         list.addListSelectionListener(e -> {
             if (!list.getValueIsAdjusting()) {
-                imageLabel.setIcon(new ImageIcon(list.getSelectedValue().getImage()));
+                Image image = null;
+                try {
+                    image = list.getSelectedValue().getImage();
+                } catch (NullPointerException ex) {
+                    ex.printStackTrace();
+                }
+
+                if (image != null) {
+                    imageLabel.setIcon(new ImageIcon(image));
+                } else {
+                    imageLabel.setIcon(null);
+                }
+
             }
         });
 
         threadsComboBox.addActionListener(e -> THREADS_NUM = threadsComboBox.getSelectedIndex() + 1);
 
         startButton.addActionListener(e -> {
-            //TODO Start Threads
+            listModel.clear();
+
+            File folder = new File(textField.getText());
+            File[] files = folder.listFiles();
+
+            if (files != null) {
+                label5.setText("Executing...");
+
+                int elementsNumber = files.length / THREADS_NUM;
+
+                Reader[] readers = new Reader[THREADS_NUM];
+                StateListener stateListener = new StateListener(THREADS_NUM, label5);
+
+                for (int i = 0; i < THREADS_NUM - 1; i++) {
+                    readers[i] = new Reader(files, elementsNumber * i, elementsNumber * (i + 1), listModel);
+                    readers[i].addPropertyChangeListener(stateListener);
+                }
+                readers[THREADS_NUM - 1] = new Reader(files, elementsNumber * (THREADS_NUM - 1), files.length, listModel);
+                readers[THREADS_NUM - 1].addPropertyChangeListener(stateListener);
+
+                for (int i = 0; i < THREADS_NUM; i++) {
+                    readers[i].execute();
+                }
+            }
         });
 
     }
