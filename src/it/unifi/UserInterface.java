@@ -3,9 +3,14 @@ package it.unifi;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Queue;
 
 public class UserInterface extends JFrame {
     private int THREADS_NUM = 4;
+    private int MODE = 0;
 
     public UserInterface() {
         super("JPEGsReaderMT");
@@ -17,12 +22,12 @@ public class UserInterface extends JFrame {
 
         //JPANEL1--------------------------------
         JPanel p1 = new JPanel();
-        JLabel label = new JLabel("Select Directory: ");
+        JLabel directoryLabel = new JLabel("Select Directory: ");
         JTextField textField = new JTextField();
         textField.setPreferredSize(new Dimension(580, 24));
         JButton openButton = new JButton("Open");
 
-        p1.add(label);
+        p1.add(directoryLabel);
         p1.add(textField);
         p1.add(openButton);
 
@@ -54,32 +59,39 @@ public class UserInterface extends JFrame {
 
         //JPANEL3--------------------------------
         JPanel p3 = new JPanel();
-        p3.setLayout(new FlowLayout(FlowLayout.LEFT, 15, 5));
+        p3.setLayout(new FlowLayout(FlowLayout.LEFT, 8, 5));
 
-        JLabel label3 = new JLabel("Threads N.: ");
+        JLabel threadsLabel = new JLabel("Threads N.: ");
 
-        Integer[] numbers = {1, 2, 3, 4, 5, 6, 7, 8};
+        Integer[] numbers = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
         JComboBox<Integer> threadsComboBox = new JComboBox<>(numbers);
         threadsComboBox.setSelectedIndex(3);
+
+        JLabel modeLabel = new JLabel("Select Mode:");
+
+        String[] modeStrings = {"No Queue", "Concurrent Queue", "Synchronized Queue"};
+        JComboBox<String> modeComboBox = new JComboBox<>(modeStrings);
 
         JButton startButton = new JButton("Start");
         startButton.setPreferredSize(new Dimension(130, 30));
 
-        JLabel label4 = new JLabel("Execution Time: ");
-        JLabel label5 = new JLabel("-----");
-        label5.setFont(new Font("", Font.PLAIN, 20));
+        JLabel timeLabel = new JLabel("Exec. Time:");
+        JLabel printTimeLabel = new JLabel("-----");
+        printTimeLabel.setFont(new Font("", Font.PLAIN, 20));
 
-        p3.add(label3);
+        p3.add(threadsLabel);
         p3.add(threadsComboBox);
+        p3.add(modeLabel);
+        p3.add(modeComboBox);
         p3.add(startButton);
-        p3.add(label4);
-        p3.add(label5);
+        p3.add(timeLabel);
+        p3.add(printTimeLabel);
 
         getContentPane().add(p3, BorderLayout.SOUTH);
         //END JPANEL3---------------------------
 
         setVisible(true);
-
+        
         //LISTENERS-----------------------------
         openButton.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
@@ -109,6 +121,7 @@ public class UserInterface extends JFrame {
         });
 
         threadsComboBox.addActionListener(e -> THREADS_NUM = threadsComboBox.getSelectedIndex() + 1);
+        modeComboBox.addActionListener(e -> MODE = modeComboBox.getSelectedIndex());
 
         startButton.addActionListener(e -> {
             listModel.clear();
@@ -118,7 +131,7 @@ public class UserInterface extends JFrame {
             File[] files = folder.listFiles();
 
             if (files != null) {
-                label5.setText("Executing...");
+                printTimeLabel.setText("Executing...");
 
                 int elementsNumber = files.length / THREADS_NUM;
 
@@ -129,18 +142,36 @@ public class UserInterface extends JFrame {
                 }
 
                 Reader[] readers = new Reader[THREADS_NUM];
-                StateListener stateListener = new StateListener(THREADS_NUM, label5, startButton);
+                StateListener stateListener = new StateListener(THREADS_NUM, printTimeLabel, startButton);
 
-                for (int i = 0; i < THREADS_NUM - 1; i++) {
-                    readers[i] = new Reader(files, elementsNumber * i, elementsNumber * (i + 1), listModel);
-                    readers[i].addPropertyChangeListener(stateListener);
+                if (MODE == 0) { //NO QUEUE
+                    for (int i = 0; i < THREADS_NUM - 1; i++) {
+                        readers[i] = new Reader(files, elementsNumber * i, elementsNumber * (i + 1), listModel);
+                        readers[i].addPropertyChangeListener(stateListener);
+                    }
+                    readers[THREADS_NUM - 1] = new Reader(files, elementsNumber * (THREADS_NUM - 1), files.length, listModel);
+                    readers[THREADS_NUM - 1].addPropertyChangeListener(stateListener);
+                }else if(MODE == 1) {//CONCURRENT QUEUE
+                    ConcurrentLinkedQueue<File> filesConcurrentQueue = new ConcurrentLinkedQueue<>(Arrays.asList(files));
+
+                    for (int i = 0; i < THREADS_NUM; i++) {
+                        readers[i] = new Reader(filesConcurrentQueue, listModel);
+                        readers[i].addPropertyChangeListener(stateListener);
+                    }
+                }else if(MODE == 2){ //QUEUE WITH SYNCHRONIZATION
+                    Queue<File> filesQueue = new LinkedList<>(Arrays.asList(files));
+
+                    for (int i = 0; i < THREADS_NUM; i++) {
+                        readers[i] = new Reader(filesQueue, listModel);
+                        readers[i].addPropertyChangeListener(stateListener);
+                    }
                 }
-                readers[THREADS_NUM - 1] = new Reader(files, elementsNumber * (THREADS_NUM - 1), files.length, listModel);
-                readers[THREADS_NUM - 1].addPropertyChangeListener(stateListener);
 
                 for (int i = 0; i < THREADS_NUM; i++) {
                     readers[i].execute();
                 }
+            }else {
+                startButton.setEnabled(true);
             }
         });
 
