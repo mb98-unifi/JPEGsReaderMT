@@ -24,12 +24,16 @@ public class UserInterface extends JFrame {
         JPanel p1 = new JPanel();
         JLabel directoryLabel = new JLabel("Select Directory: ");
         JTextField textField = new JTextField();
-        textField.setPreferredSize(new Dimension(580, 24));
+        textField.setPreferredSize(new Dimension(450, 24));
         JButton openButton = new JButton("Open");
+        JButton KIPButton = new JButton("KIP");
+        KIPButton.setPreferredSize(new Dimension(120, 30));
+        KIPButton.setEnabled(false);
 
-        p1.add(directoryLabel);
+        p1.add(directoryLabel, FlowLayout.LEFT);
         p1.add(textField);
-        p1.add(openButton);
+        p1.add(KIPButton, FlowLayout.RIGHT);
+        p1.add(openButton, FlowLayout.RIGHT);
 
         getContentPane().add(p1, BorderLayout.NORTH);
         //END JPANEL1---------------------------
@@ -91,7 +95,7 @@ public class UserInterface extends JFrame {
         //END JPANEL3---------------------------
 
         setVisible(true);
-        
+
         //LISTENERS-----------------------------
         openButton.addActionListener(e -> {
             JFileChooser fileChooser = new JFileChooser();
@@ -101,6 +105,8 @@ public class UserInterface extends JFrame {
                 textField.setText(fileChooser.getSelectedFile().getAbsolutePath());
             }
         });
+
+        KIPButton.addActionListener(e -> new KIPUserInterface(list.getSelectedValue(), THREADS_NUM));
 
         list.addListSelectionListener(e -> {
             if (!list.getValueIsAdjusting()) {
@@ -113,8 +119,10 @@ public class UserInterface extends JFrame {
 
                 if (image != null) {
                     imageLabel.setIcon(new ImageIcon(image));
+                    KIPButton.setEnabled(true);
                 } else {
                     imageLabel.setIcon(null);
+                    KIPButton.setEnabled(false);
                 }
 
             }

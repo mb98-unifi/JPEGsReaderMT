@@ -88,7 +88,7 @@ public class Reader extends SwingWorker<Void, ImageContainer> {
             } else {
                 image = bufferedImage.getScaledInstance(-1, 400, Image.SCALE_SMOOTH);
             }
-            ImageContainer imageContainer = new ImageContainer(image, file.getName());
+            ImageContainer imageContainer = new ImageContainer(image, file.getName(), file.getAbsolutePath());
             publish(imageContainer);
         }
     }
